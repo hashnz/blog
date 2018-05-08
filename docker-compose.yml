@@ -1,0 +1,61 @@
+version: "3"
+
+services:
+
+  nginx:
+    image: nginx
+    ports:
+      - 80:80
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./public:/srv/public
+    working_dir: /srv
+
+  php:
+    build:
+      context: ./docker/php-dev
+    environment:
+      XDEBUG_CONFIG: remote_host=172.17.0.1 idekey=PHPSTORM remote_port=9009 remote_autostart=1 remote_connect_back=1
+      PHP_IDE_CONFIG: serverName=dev
+      MONGO_URI: mongodb://172.17.0.1
+      DB_HOST: 172.17.0.1
+      DB_PORT: 33060
+      DB_DATABASE: laravel
+      DB_USERNAME: laravel
+    ports:
+      - 9000:9000
+    volumes:
+      - ./docker/php.conf:/usr/local/etc/php/conf.d/php.user.ini
+      - ./:/srv
+    working_dir: /srv
+
+  db:
+    image: mariadb
+    ports:
+      - 33060:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: laravel
+      MYSQL_DATABASE: laravel
+      MYSQL_PASSWORD: secret
+    volumes:
+      - data:/var/lib/mysql
+
+  mongo:
+    image: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - data:/data/db
+
+  node:
+    image: node
+    volumes:
+      - ./:/srv
+    working_dir: /srv
+    entrypoint: npm run watch
+#    entrypoint: tail -f /dev/null
+
+volumes:
+  data:
+    driver: "local"
